@@ -24,16 +24,18 @@ def calc_known(wbrown):
 def replace_rare(brown, knownwords):
     	rare = []
 	for line in brown:
+		sentence = []
 		for word in line:
 			if word not in knownwords:
-				word = '_RARE_'
-		rare.append(line)
+				sentence.append('_RARE_')
+			else:
+				sentence.append(word)
+		rare.append(sentence)
     	return rare
 
 #this function takes the ouput from replace_rare and outputs it
 def q3_output(rare):
     outfile = open("B3.txt", 'w')
-
     for sentence in rare:
         outfile.write(' '.join(sentence[2:-1]) + '\n')
     outfile.close()
@@ -130,32 +132,34 @@ def viterbi(brown, taglist, knownwords, qvalues, evalues):
 			pi[(1, w, u)] = pi.get((0, '*', w), -1000) + qvalues.get(key, -1000) + evalues.get((tokens[1], u), -1000)
 			bp[(1, w, u)] = '*' 
 		tags = []
-		#k > 2 case
-		max_u = None
-		max_v = None
-		max_prob = -float('Inf')
+		#k >= 2 case
 		for k in range (2, len(tokens)):
 			for (u, v) in itertools.product(taglist, taglist):
+				max_prob = -float('Inf')
+				max_tag = ""
 				for w in taglist:
 					score = pi.get((k-1, w, u), -1000) + qvalues.get((w,u,v), -1000) + evalues.get((tokens[k], v), -1000)
 					if(score > max_prob):
-						max_val = score(w)
-						max_u = u
-						max_v = v
-						bp[(k,u,v)] = w
-						pi[(k,u,v)] = score(w)
+						max_prob = score
+						max_tag = w
+				bp[(k,u,v)] = max_tag
+				pi[(k,u,v)] = score
+		
+		max_prob = -float('Inf')
 		#finding the max probability of last two tags
 		for (u,v) in itertools.product(taglist,taglist):
-			if(pi.get((len(tokens)-1, u, v),-1000)*qvalues.get((u,v,'STOP'),-1000)) >  max_prob:
-				max_prob = pi.get((len(tokens)-1, u, v),-1000)*qvalues.get((u,v,'STOP'),-1000)
+			score = pi.get((len(tokens_orig)-1, u, v),-1000) + qvalues.get((u,v,'STOP'),-1000) 
+			if score >  max_prob:
+				max_prob = score
 				u_max = u
 				v_max = v
+
 		#append tags in reverse order
 		tags.append(v_max)
 		tags.append(u_max)
 		count = 0
-		for k in reversed(range(0, len(tokens)-2)):
-			tags.append(bp[k + 2, tags[count+1], tags[count]])
+		for k in range(len(tokens_orig)-3, -1, -1):
+			tags.append(bp.get((k + 2, tags[count+1], tags[count]),-1000))
 			count +=1
 		tagged_sentence = ""
 		#reverse tags
@@ -186,12 +190,10 @@ def nltk_tagger(brown):
 	bigram_tagger = nltk.BigramTagger(training, backoff=default_tagger)
 	trigram_tagger = nltk.TrigramTagger(training, backoff = bigram_tagger)
 	for sentence in brown:
-		sentence_tagged = trigram_tagger.tag(sentence)
-		word_list = []
-		for word_tag in sentence_tagged:
-			if not(word_tag[0] == '*' or word_tag[0] == 'STOP'):
-				word_list.append(word_tag[0] + '/' + word_tag[1])
-		tagged.append(word_list)
+       		tagged_sentence = trigram_tagger.tag(sentence)
+        # print sentence
+        	sentence = [w + '/' + t for w, t in tagged_sentence]
+        	tagged.append(' '.join(sentence) + '\n')	
 	return tagged
 
 def q6_output(tagged):
@@ -227,7 +229,7 @@ def main():
     	wbrown, tbrown = split_wordtags(brown_train)
 	#calculate trigram probabilities (question 2)
     	qvalues = calc_trigrams(tbrown)
-
+	print wbrown[0]
     	#question 2 output
     	q2_output(qvalues)
 
@@ -259,14 +261,14 @@ def main():
 	#format Brown development data here
     	#do viterbi on brown_dev (question 5)
     	viterbi_tagged = viterbi(brown_dev, taglist, knownwords, qvalues, evalues)
-
+	
     	#question 5 output
     	q5_output(viterbi_tagged)
-	
+	'''
     	#do nltk tagging here
     	nltk_tagged = nltk_tagger(brown_dev)
 
     	#question 6 output
     	q6_output(nltk_tagged)
-
+	'''
 if __name__ == "__main__": main()
