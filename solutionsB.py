@@ -143,7 +143,7 @@ def viterbi(brown, taglist, knownwords, qvalues, evalues):
 						max_prob = score
 						max_tag = w
 				bp[(k,u,v)] = max_tag
-				pi[(k,u,v)] = score
+				pi[(k,u,v)] = max_prob
 		
 		max_prob = -float('Inf')
 		#finding the max probability of last two tags
@@ -165,14 +165,13 @@ def viterbi(brown, taglist, knownwords, qvalues, evalues):
 		tagged_sentence = ""
 		#reverse tags
 		tags.reverse()
-
 		#stringify tags paired with word without start and stop symbols
+		print tags
 		for k in range(0, len(tokens_orig)):
 			tagged_sentence = tagged_sentence + tokens_orig[k] + "/" + str(tags[k]) + " "
 		tagged_sentence += "\n"
 		tagged.append(tagged_sentence)	
 	return tagged		
-
 #this function takes the output of viterbi() and outputs it
 def q5_output(tagged):
     	outfile = open('B5.txt', 'w')
