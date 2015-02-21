@@ -24,12 +24,13 @@ def calc_known(wbrown):
 def replace_rare(brown, knownwords):
     	rare = []
 	for line in brown:
-		sentence = []
+		sentence = ['*', '*']
 		for word in line:
 			if word not in knownwords:
 				sentence.append('_RARE_')
 			else:
 				sentence.append(word)
+		sentence.append('STOP')
 		rare.append(sentence)
     	return rare
 
@@ -121,7 +122,7 @@ def viterbi(brown, taglist, knownwords, qvalues, evalues):
 	for line in brown:
 		tokens_orig =  nltk.word_tokenize(line)	
 		tokens = [w if w in knownwords else '_RARE_' for w in tokens_orig]
-		tokens = ['*'] + tokens + ['STOP']
+		tokens = tokens
 		# k = 1 case
 		for w in taglist:
 			pi[(0, '*', w)] = pi[(-1,'*','*')] + qvalues.get(('*', '*', w), -1000) + evalues.get((tokens[0], w), -1000)
@@ -153,20 +154,18 @@ def viterbi(brown, taglist, knownwords, qvalues, evalues):
 				max_prob = score
 				u_max = u
 				v_max = v
-
 		#append tags in reverse order
 		tags = []
 		tags.append(v_max)
 		tags.append(u_max)
 		count = 0
-		for k in reversed(range(0,len(tokens_orig)-2)):
-			tags.append(bp.get((k + 2, tags[count+1], tags[count]),-1000))
+		for k in range(len(tokens_orig) - 3, -1, -1):
+			tags.append(bp[(k + 2, tags[count+1], tags[count])])
 			count +=1
 		tagged_sentence = ""
 		#reverse tags
 		tags.reverse()
 		#stringify tags paired with word without start and stop symbols
-		print tags
 		for k in range(0, len(tokens_orig)):
 			tagged_sentence = tagged_sentence + tokens_orig[k] + "/" + str(tags[k]) + " "
 		tagged_sentence += "\n"
@@ -229,7 +228,7 @@ def debug_output(filename, data):
 	outfile.close()
 		
 def main():
-    	'''#open Brown training data
+    	#open Brown training data
     	infile = open("Brown_tagged_train.txt", "r")
     	brown_train = infile.readlines()
     	infile.close()
@@ -265,7 +264,6 @@ def main():
     	infile = open("Brown_dev.txt", "r")
     	brown_dev = infile.readlines()
 	infile.close()
-	brown_dev = brown_dev[0:3]    
 	############DEBUG#################
 	qvalues = defaultdict(float)
 	qval_file = open("B2.txt", "r")
@@ -289,7 +287,7 @@ def main():
     	#question 5 output
     	q5_output(viterbi_tagged)
 	
-    	'''#do nltk tagging here
+    	#do nltk tagging here
     	nltk_tagged = nltk_tagger(brown_dev)
 
     	#question 6 output
