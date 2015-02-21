@@ -116,6 +116,7 @@ def viterbi(brown, taglist, knownwords, qvalues, evalues):
     	tagged = []
 	pi = defaultdict(float)
 	bp = {}
+	bp[(-1,'*','*')] = '*'
 	pi[(-1,'*','*')] = 0.0
 	for line in brown:
 		tokens_orig =  nltk.word_tokenize(line)	
@@ -131,7 +132,6 @@ def viterbi(brown, taglist, knownwords, qvalues, evalues):
 			key = ('*', w, u)
 			pi[(1, w, u)] = pi.get((0, '*', w), -1000) + qvalues.get(key, -1000) + evalues.get((tokens[1], u), -1000)
 			bp[(1, w, u)] = '*' 
-		tags = []
 		#k >= 2 case
 		for k in range (2, len(tokens)):
 			for (u, v) in itertools.product(taglist, taglist):
@@ -155,10 +155,11 @@ def viterbi(brown, taglist, knownwords, qvalues, evalues):
 				v_max = v
 
 		#append tags in reverse order
+		tags = []
 		tags.append(v_max)
 		tags.append(u_max)
 		count = 0
-		for k in range(len(tokens_orig)-3, -1, -1):
+		for k in reversed(range(0,len(tokens_orig)-2)):
 			tags.append(bp.get((k + 2, tags[count+1], tags[count]),-1000))
 			count +=1
 		tagged_sentence = ""
@@ -220,8 +221,16 @@ def split_wordtags(brown_train):
 		tbrown.append(tags)
 	return wbrown, tbrown
 
+def debug_output(filename, data):
+	outfile = open(filename, 'w')
+	result = ""
+	for item in data:
+		result += item + " "
+	outfile.write(result)
+	outfile.close()
+		
 def main():
-    	#open Brown training data
+    	'''#open Brown training data
     	infile = open("Brown_tagged_train.txt", "r")
     	brown_train = infile.readlines()
     	infile.close()
@@ -229,13 +238,12 @@ def main():
     	wbrown, tbrown = split_wordtags(brown_train)
 	#calculate trigram probabilities (question 2)
     	qvalues = calc_trigrams(tbrown)
-	print wbrown[0]
     	#question 2 output
     	q2_output(qvalues)
 
     	#calculate list of words with count > 5 (question 3)
     	knownwords = calc_known(wbrown)
-
+	debug_output('known.txt', knownwords)
     	#get a version of wbrown with rare words replace with '_RARE_' (question 3)
     	wbrown_rare = replace_rare(wbrown, knownwords)
 
@@ -244,7 +252,7 @@ def main():
 
     	#calculate emission probabilities (question 4)
     	evalues, taglist = calc_emission(wbrown_rare, tbrown)
-	
+	debug_output('taglist.txt', taglist)
     	#question 4 output
     	q4_output(evalues)
 
@@ -253,19 +261,36 @@ def main():
     	del wbrown
     	del tbrown
     	del wbrown_rare
-    	#open Brown development data (question 5)
+    	'''
+	#open Brown development data (question 5)
     	infile = open("Brown_dev.txt", "r")
     	brown_dev = infile.readlines()
 	infile.close()
 	brown_dev = brown_dev[0:3]    
+	############DEBUG#################
+	qvalues = defaultdict(float)
+	qval_file = open("B2.txt", "r")
+	for line in qval_file:
+		tokens = line.split(' ')
+		qvalues[(tokens[1], tokens[2], tokens[3])] = float(tokens[4])
+	evalues = defaultdict(float)
+	eval_file = open ("B4.txt", "r")
+	for line in eval_file:
+		tokens = line.split(' ')
+		evalues[(tokens[0], tokens[1])] =  float(tokens[2])
+	taglist = []
+	taglist = open("taglist.txt", 'r').read().split(' ')
+	knownwords = []
+	knownwords = open("known.txt", 'r').read().split(' ')
+	######################################	
 	#format Brown development data here
     	#do viterbi on brown_dev (question 5)
     	viterbi_tagged = viterbi(brown_dev, taglist, knownwords, qvalues, evalues)
 	
     	#question 5 output
     	q5_output(viterbi_tagged)
-	'''
-    	#do nltk tagging here
+	
+    	'''#do nltk tagging here
     	nltk_tagged = nltk_tagger(brown_dev)
 
     	#question 6 output
