@@ -76,11 +76,7 @@ def score(ngram_p, n, data):
 			key = ()
 			for j in range(i,i+n):
 				key += (tokens[j],)
-			if ngram_p[key]!= 0.0:
-				line_score += ngram_p[key]
-			else:
-				line_score = -1000
-				break
+			line_score += ngram_p.get((key),-1000)
 		scores.append(line_score)
 	return scores
 
@@ -97,45 +93,46 @@ def score_output(scores, filename):
 #this function scores brown data with a linearly interpolated model
 #each ngram argument is a python dictionary where the keys are tuples that express an ngram and the value is the log probability of that ngram
 #like score(), this function returns a python list of scores
-def linearscore(unigrams, bigrams, trigrams, brown):
-    	scores = []
-	for line in brown:
-		uni = []
-		bi = []
-		tri = []
-		tokens = (nltk.word_tokenize(line)) + ['STOP']
-		not_found = False
-		for i in range(1,4):
-			if i == 2 or i == 3:
-				tokens = ['*'] + tokens
-			for k in range (0, len(tokens)-i+1):
-				key = ()
-				for j in range(k, k+i):
-					key+= (tokens[j],)
-				if i == 1:
-					if unigrams[key] == 0:
-						not_found = True
-						break
-					uni.append(unigrams[key])
-				if i == 2:
-					if bigrams[key] == 0:
-						not_found = True
-						break
-					bi.append(bigrams[key])
-				if i == 3:
-					if trigrams[key] == 0:
-						not_found = True
-						break
-					tri.append(trigrams[key])
 
-		score = 0.0
-		if not_found:
-			score = -1000
-		else:
-			for i in range(0, len(uni)):
-				score += math.log(1.0/3.0*(m.pow(2, uni[i]) + m.pow(2,bi[i]) + m.pow(2,tri[i])),2)
-		scores.append(score.real)		
-    	return scores
+def linearscore(unigrams, bigrams, trigrams, brown):
+    scores = []
+
+    for sentence in brown:
+        tokens = nltk.word_tokenize(sentence)
+        tokens = ['*','*'] + tokens + ["STOP"]
+	mytrigrams = tuple(nltk.trigrams(tokens))
+
+        total_prob = 0.0
+        failed_sentence = False
+
+        for trigram in mytrigrams:
+            bigram = (trigram[1], trigram[2])
+            unigram = (trigram[2], )
+
+            if trigram in trigrams:
+                trigram_prob = 2**trigrams[trigram]
+            else:
+                trigram_prob = 0.0
+            if bigram in bigrams:
+                bigram_prob = 2**bigrams[bigram]
+            else:
+                bigram_prob = 0.0
+            if unigram in unigrams:
+                unigram_prob = 2**unigrams[unigram]
+            else:
+                unigram_prob = 0.0
+
+            prob = trigram_prob + bigram_prob + unigram_prob
+            if prob == 0.0:
+                failed_sentence = True
+            else:
+                total_prob += math.log(prob,2) + math.log(1.0/3.0, 2)
+
+        if failed_sentence:
+            scores.append(-1000)
+	else:
+		scores.append(total_prob.real)
+    return scores
 
 def main():
     	#open data
