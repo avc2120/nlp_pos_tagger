@@ -30,7 +30,6 @@ def replace_rare(brown, knownwords):
 				sentence.append('_RARE_')
 			else:
 				sentence.append(word)
-		sentence.append('STOP')
 		rare.append(sentence)
     	return rare
 
@@ -38,7 +37,7 @@ def replace_rare(brown, knownwords):
 def q3_output(rare):
     outfile = open("B3.txt", 'w')
     for sentence in rare:
-        outfile.write(' '.join(sentence) + '\n')
+        outfile.write(' '.join(sentence[2:-1]) + '\n')
     outfile.close()
 
 #this function takes tags from the training data and calculates trigram probabilities
@@ -190,10 +189,9 @@ def nltk_tagger(brown):
 	trigram_tagger = nltk.TrigramTagger(training, backoff = bigram_tagger)
 	for sentence in brown:
        		tagged_sentence = trigram_tagger.tag(sentence)
-		wordlist = []
-        	for tag in tagged_sentence:
-			wordlist.append(tag[0] + "/" + tag[1])
-		tagged.append(wordlist)
+        # print sentence
+        	sentence = [w + '/' + t for w, t in tagged_sentence]
+        	tagged.append(' '.join(sentence) + '\n')	
 	return tagged
 
 def q6_output(tagged):
@@ -205,7 +203,7 @@ def q6_output(tagged):
 
 #a function that returns two lists, one of the brown data (words only) and another of the brown data (tags only)
 def split_wordtags(brown_train):
-    	wbrown = []
+    	wbrown = ["*","*"]
     	tbrown = []
 	for line in brown_train:
 		tags = []
@@ -216,7 +214,8 @@ def split_wordtags(brown_train):
 			for i in range(0, len(word)-1):
 				words.append(word[i])
 			tags += [word[len(word)-1]]
-		wbrown.append(words)
+		wbrown += words
+		wbrown.append("STOP")
 		tbrown.append(tags)
 	return wbrown, tbrown
 
@@ -229,7 +228,7 @@ def debug_output(filename, data):
 	outfile.close()
 		
 def main():
-    	'''#open Brown training data
+    	#open Brown training data
     	infile = open("Brown_tagged_train.txt", "r")
     	brown_train = infile.readlines()
     	infile.close()
@@ -242,7 +241,7 @@ def main():
 
     	#calculate list of words with count > 5 (question 3)
     	knownwords = calc_known(wbrown)
-	#debug_output('known.txt', knownwords)
+	'''debug_output('known.txt', knownwords)'''
     	#get a version of wbrown with rare words replace with '_RARE_' (question 3)
     	wbrown_rare = replace_rare(wbrown, knownwords)
 
@@ -250,8 +249,8 @@ def main():
     	q3_output(wbrown_rare)
 
     	#calculate emission probabilities (question 4)
-    	evalues, taglist = calc_emission(wbrown_rare, tbrown)
-	#debug_output('taglist.txt', taglist)
+	evalues, taglist = calc_emission(wbrown_rare, tbrown)
+	'''debug_output('taglist.txt', taglist)'''
     	#question 4 output
     	q4_output(evalues)
 
@@ -260,12 +259,14 @@ def main():
     	del wbrown
     	del tbrown
     	del wbrown_rare
-    	'''
+    	
 	#open Brown development data (question 5)
     	infile = open("Brown_dev.txt", "r")
     	brown_dev = infile.readlines()
 	infile.close()
-	'''############DEBUG#################
+	brown_dev = brown_dev[0:5]
+	'''
+	############DEBUG#################
 	qvalues = defaultdict(float)
 	qval_file = open("B2.txt", "r")
 	for line in qval_file:
@@ -281,20 +282,18 @@ def main():
 	knownwords = []
 	knownwords = open("known.txt", 'r').read().split(' ')
 	######################################	
-	
+	'''
 	#format Brown development data here
     	#do viterbi on brown_dev (question 5)
     	viterbi_tagged = viterbi(brown_dev, taglist, knownwords, qvalues, evalues)
 	
     	#question 5 output
     	q5_output(viterbi_tagged)
-	'''
+	
     	#do nltk tagging here
-	brown_dev = [[w for w in nltk.word_tokenize(s)] for s in brown_dev ]
-    	print brown_dev
-	nltk_tagged = nltk_tagger(brown_dev)
+    	nltk_tagged = nltk_tagger(brown_dev)
+
     	#question 6 output
-    	print nltk_tagged
-	q6_output(nltk_tagged)
+    	q6_output(nltk_tagged)
 	
 if __name__ == "__main__": main()
