@@ -103,7 +103,7 @@ def linearscore(unigrams, bigrams, trigrams, brown):
 	mytrigrams = tuple(nltk.trigrams(tokens))
 
         total_prob = 0.0
-        failed_sentence = False
+        fail = False
 
         for trigram in mytrigrams:
             bigram = (trigram[1], trigram[2])
@@ -124,11 +124,11 @@ def linearscore(unigrams, bigrams, trigrams, brown):
 
             prob = trigram_prob + bigram_prob + unigram_prob
             if prob == 0.0:
-                failed_sentence = True
+                fail = True
             else:
                 total_prob += math.log(prob,2) + math.log(1.0/3.0, 2)
 
-        if failed_sentence:
+        if fail:
             scores.append(-1000)
 	else:
 		scores.append(total_prob.real)
